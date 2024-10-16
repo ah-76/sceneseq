@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narrative Sequencer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Raleway:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #1a1a1a;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .top-controls {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #title-input {
+			   font-family: 'Lato', sans-serif;
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            background-color: #333;
+            color: #e06c75;
+        }
+        button {
+            background-color: #444;
+            border: none;
+            color: #999;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+			  background-color: rgba(97,175,239, 0.3);
+			  color: #111;
+        }
+        #trash {
+            font-size: 40px;
+            cursor: pointer;
+            color: #888;
+            transition: color 0.3s;
+            margin-left: auto;
+			  margin-right: auto;
+        }
+        #trash:hover {
+            color: #ff6b6b;
+        }
+        #sequence-area {
+			  background: transparent;
+            border-radius: 5px;
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+			  row-gap: 35px; 
+            gap: 35px;
+            justify-content: flex-start;
+            align-content: flex-start;
+        }
+        .gene-tile {
+            background-color: #3a3a3a;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: move;
+            width: calc(25% - 30px);
+            box-sizing: border-box;
+            transition: background-color 0.3s, opacity 0.3s, transform 0.3s;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            height: 375px;
+            display: flex;
+            flex-direction: column;
+        }
+        .gene-tile.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .gene-tile:hover {
+            background-color: #4a4a4a;
+        }
+        .gene-tile textarea {
+            width: 100%;
+			   border-radius: 5px;
+            border: 1px solid #555;
+            padding: 5px;
+            box-sizing: border-box;
+            background-color: #2a2a2a;
+            resize: none;
+            flex-grow: 1;
+        }
+        .gene-tile textarea:first-of-type {
+			   font-family: 'Lato', sans-serif;
+            color:  rgba(253, 253, 150, 0.7); 
+            font-size: 16px;
+            height: 6em;
+            margin-bottom: 15px;
+        }
+        .gene-tile textarea:last-of-type {
+            font-family: 'Raleway', sans-serif;
+			   font-size: 16px;
+            color: #b3b3b3;
+            height: 6em;
+            margin-bottom: 5px;
+        }
+ /* General focus style */
+.gene-tile textarea:focus {
+    outline: none; /* Optional: Remove the default outline */
+}
+
+/* Focus style for first-of-type textarea */
+.gene-tile textarea:first-of-type:focus {
+    border-color: #666; /* Matches the text color */
+}
+
+/* Focus style for last-of-type textarea */
+.gene-tile textarea:last-of-type:focus {
+    border-color: #666; /* Matches the text color */
+}
+        .gene-number {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            background-color: transparent;
+            color: #999;
+            border-radius: 50%;
+            width: auto;
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        ::placeholder {
+            color: #888;
+        }
+        .color-picker {
+            display: flex;
+			  gap: 15px;
+        }
+        .color-button {
+			  	margin-right: 30px;
+            width: 35px;
+            height: 35px;
+            border-radius: 20%;
+            border: none;
+            cursor: move;
+        }
+        .color-button:hover {
+            transform: scale(1.1);
+        }
+        .color-button.default { background-color: #3a3a3a; }
+        .color-button.color1 { background-color: rgba(255, 182, 193, 0.3); }
+        .color-button.color2 { background-color: rgba(173, 216, 230, 0.3); }
+        .color-button.color3 { background-color: rgba(144, 238, 144, 0.3); }
+        .color-button.color4 { background-color: rgba(255, 218, 185, 0.3); }
+
+			  .icon-button {
+    background-color: #2a2a2a;
+    border: none;
+				  	border-radius: 4px;
+
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; /* Adjust the size as needed */
+    height: 40px; /* Adjust the size as needed */
+    color: rgba(59, 93, 213, 0.7);
+				  
+}
+
+.icon-button:hover {
+   background-color: rgba(59, 93, 213, 0.7);
+	color: #111;
+}
+
+.material-icons {
+    font-size: 36px; /* Adjust the size as needed */
+}
+
+/* Style the scrollbar track */
+.gene-tile textarea::-webkit-scrollbar-track {
+    background: #222; /* Background of the track */
+    border-radius: 3px; /* Optional: rounded corners for the track */
+}
+
+/* Style the scrollbar thumb */
+.gene-tile textarea::-webkit-scrollbar-thumb {
+    background: #555; /* Color of the scrollbar thumb */
+    border-radius: 5px; /* Optional: rounded corners for the thumb */
+    border: 1px solid #333; /* Optional: space around thumb */
+}
+
+/* Style the scrollbar thumb when hovered */
+.gene-tile textarea::-webkit-scrollbar-thumb:hover {
+    background: #444; /* Color of the scrollbar thumb on hover */
+}
+
+/* Width of the vertical scrollbar */
+.gene-tile textarea::-webkit-scrollbar {
+    width: 8px; /* Width of the scrollbar */
+}
+
+/* Optional: Style the scrollbar corner where vertical and horizontal scrollbars meet */
+.gene-tile textarea::-webkit-scrollbar-corner {
+    background: #2a2a2a; /* Background of the corner */
+}
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-controls">
+            <input type="text" id="title-input" placeholder="Sequence Name">
+            <i id="trash" class="material-icons">delete</i>
+            <div class="color-picker">
+                <div class="color-button default" draggable="true" data-color="#3a3a3a"></div>
+                <div class="color-button color1" draggable="true" data-color="rgba(255, 182, 193, 0.3)"></div>
+                <div class="color-button color2" draggable="true" data-color="rgba(173, 216, 230, 0.3)"></div>
+                <div class="color-button color3" draggable="true" data-color="rgba(144, 238, 144, 0.3)"></div>
+                <div class="color-button color4" draggable="true" data-color="rgba(255, 218, 185, 0.3)"></div>
+            </div>
+            <button id="add-gene" class="icon-button"><i class="material-icons">note_add</i></button>
+            <button id="toggle-numbers" class="icon-button"><i class="material-icons">format_list_numbered</i></button>
+
+            <button id="save-sequence" class="icon-button"><i class="material-icons">save</i></button>
+            <button id="load-sequence" class="icon-button"><i class="material-icons">folder_open</i></button>
+
+            <input type="file" id="file-input" style="display: none;" accept=".json">
+        </div>
+        <div id="sequence-area"></div>
+    </div>
+
+    <script>
+        const sequenceArea = document.getElementById('sequence-area');
+        const addGeneButton = document.getElementById('add-gene');
+        const saveSequenceButton = document.getElementById('save-sequence');
+        const loadSequenceButton = document.getElementById('load-sequence');
+        const toggleNumbersButton = document.getElementById('toggle-numbers');
+        const fileInput = document.getElementById('file-input');
+        const titleInput = document.getElementById('title-input');
+        const trash = document.getElementById('trash');
+        const colorButtons = document.querySelectorAll('.color-button');
+    
+        let showNumbers = false;
+        let draggedColor = null;
+        let focusedTile = null;
+    
+        function createGeneTile(knowing = '', action = '', color = '#3a3a3a') {
+            const geneTile = document.createElement('div');
+            geneTile.className = 'gene-tile';
+            geneTile.style.background = `linear-gradient(to bottom, #222, ${color})`;
+            geneTile.dataset.color = color; // Store the color as a data attribute
+            geneTile.innerHTML = `
+                <textarea spellcheck="false" autocomplete="off" placeholder="What We Know (Capability Revealed)">${knowing}</textarea>
+                <textarea spellcheck="false" autocomplete="off" placeholder="Action Demonstrating This">${action}</textarea>
+                <div class="gene-number" style="display: none;"></div>
+            `;
+            return geneTile;
+        }
+    
+        function updateNumbers() {
+            const tiles = sequenceArea.querySelectorAll('.gene-tile');
+            tiles.forEach((tile, index) => {
+                const numberElement = tile.querySelector('.gene-number');
+                numberElement.textContent = index + 1;
+                numberElement.style.display = showNumbers ? 'flex' : 'none';
+            });
+        }
+    
+        document.addEventListener('focusin', (e) => {
+            if (e.target.tagName.toLowerCase() === 'textarea' && e.target.closest('.gene-tile')) {
+                focusedTile = e.target.closest('.gene-tile');
+            }
+        });
+    
+        addGeneButton.addEventListener('click', () => {
+            const newGene = createGeneTile();
+            if (focusedTile) {
+                focusedTile.insertAdjacentElement('afterend', newGene);
+            } else {
+                sequenceArea.appendChild(newGene);
+            }
+            setTimeout(() => newGene.classList.add('show'), 10);
+            updateNumbers();
+        });
+    
+        new Sortable(sequenceArea, {
+            animation: 150,
+            onEnd: updateNumbers
+        });
+    
+        saveSequenceButton.addEventListener('click', async () => {
+            const genes = Array.from(sequenceArea.querySelectorAll('.gene-tile')).map(tile => {
+                const textareas = tile.querySelectorAll('textarea');
+                return {
+                    knowing: textareas[0].value,
+                    action: textareas[1].value,
+                    color: tile.dataset.color // Use the stored color from the data attribute
+                };
+            });
+    
+            const jsonString = JSON.stringify(genes, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+    
+            try {
+                const handle = await showSaveFilePicker({
+                    suggestedName: (titleInput.value.trim() || 'narrative_sequence') + '.json',
+                    types: [{
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                console.log('File saved successfully.');
+            } catch (err) {
+                console.error('Error saving file:', err);
+            }
+        });
+    
+        loadSequenceButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+    
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const genes = JSON.parse(e.target.result);
+                    sequenceArea.innerHTML = '';
+                    genes.forEach(gene => {
+                        const tile = createGeneTile(gene.knowing, gene.action, gene.color);
+                        sequenceArea.appendChild(tile);
+                        setTimeout(() => tile.classList.add('show'), 10);
+                        const knowingTextarea = tile.querySelector('textarea:first-of-type');
+                        if (knowingTextarea) {
+                            knowingTextarea.style.color = adjustTextColorBrightness(gene.color, 0.7);
+                        }
+                    });
+                    titleInput.value = file.name.replace('.json', '');
+                    updateNumbers();
+                };
+                reader.readAsText(file);
+            }
+        });
+    
+        toggleNumbersButton.addEventListener('click', () => {
+            showNumbers = !showNumbers;
+            updateNumbers();
+        });
+    
+        let draggedTile = null;
+    
+        sequenceArea.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('gene-tile')) {
+                draggedTile = e.target;
+            }
+        });
+    
+        trash.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            trash.style.color = '#ff6b6b';
+        });
+    
+        trash.addEventListener('dragleave', () => {
+            trash.style.color = '#888';
+        });
+    
+        trash.addEventListener('drop', (e) => {
+            e.preventDefault();
+            trash.style.color = '#888';
+            if (draggedTile) {
+                draggedTile.remove();
+                draggedTile = null;
+                updateNumbers();
+            }
+        });
+    
+        colorButtons.forEach(button => {
+            button.addEventListener('dragstart', (e) => {
+                draggedColor = e.target.dataset.color;
+                e.dataTransfer.setData('text/plain', draggedColor);
+            });
+        });
+    
+        sequenceArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+    
+        sequenceArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const color = e.dataTransfer.getData('text');
+            if (color) {
+                const tile = e.target.closest('.gene-tile');
+                if (tile) {
+                    tile.style.background = `linear-gradient(to bottom, #2A2A2A, ${color})`;
+                    tile.dataset.color = color; // Update the data attribute
+                    const knowingTextarea = tile.querySelector('textarea:first-of-type');
+                    if (knowingTextarea) {
+                        knowingTextarea.style.color = adjustTextColorBrightness(color, 0.7);
+                    }
+                }
+            }
+        });
+    
+        function adjustTextColorBrightness(color, factor) {
+            function normalizeColor(color) {
+                if (color.startsWith('#')) {
+                    const bigint = parseInt(color.slice(1), 16);
+                    const r = (bigint >> 16) & 255;
+                    const g = (bigint >> 8) & 255;
+                    const b = bigint & 255;
+                    return `rgb(${r}, ${g}, ${b})`;
+                }
+                return color;
+            }
+    
+            color = normalizeColor(color);
+    
+            if (color === "rgb(58, 58, 58)" || color === "#3a3a3a") {
+                color = "rgb(253, 253, 150)";
+            }
+    
+            const colorParts = color.match(/rgba?\((\d+), (\d+), (\d+)(, ([\d.]+))?\)/) || color.match(/rgb\((\d+), (\d+), (\d+)\)/);
+            if (!colorParts) return color;
+    
+            const r = Math.min(255, Math.max(0, Math.round(colorParts[1] * factor)));
+            const g = Math.min(255, Math.max(0, Math.round(colorParts[2] * factor)));
+            const b = Math.min(255, Math.max(0, Math.round(colorParts[3] * factor)));
+    
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    </script>
+
+</body>
+
+</html>
